@@ -1,0 +1,122 @@
+CARTESIAN_PRODUCT=./cartesian_product.py
+CXX = g++
+RM = rm -f
+RUNNER = ./runner.py
+MERGE_TABLES = ./merge_tables.py
+GRAPH_TABLE= ./graph_table.py
+
+# ALL combinations of the Distinct consistency levels and value
+# selection heuristics:
+EXPERIMENTS_1 = $(shell $(CARTESIAN_PRODUCT) hexagon-1 "dom, val, bnd" \
+								"min, max, rnd, splitmin, splitmax, median, rangemin,\
+                 rangemax, valuesmin, valuesmax" .tex)
+
+EXPERIMENTS_2 = $(shell $(CARTESIAN_PRODUCT) hexagon-2 "dom, val, bnd" \
+								"min, max, rnd, splitmin, splitmax, median, rangemin,\
+                 rangemax, valuesmin, valuesmax" .tex)
+
+EXPERIMENTS_3 = $(shell $(CARTESIAN_PRODUCT) hexagon-3 "dom, val, bnd" \
+								"min, max, rnd, splitmin, splitmax, median, rangemin,\
+                 rangemax, valuesmin, valuesmax" .tex)
+
+HEXAGON_ARGS = --nrounds=10 \
+							 --collate-with=median \
+							 --timeout-ms=5000 \
+	  					 --die-on-timeout \
+							 --start=0 \
+							 --stop=1 \
+							 -v
+
+EXECUTABLES := hexagon1 hexagon2 hexagon3
+SRCS := $(EXECUTABLES:=.cpp)
+OBJS = $(SRCS:.cpp=.o)
+LIBS = -L/it/sw/gecode/gecode-5.1.0/lib  -lgecodedriver -lgecodegist -lgecodesearch -lgecodeminimodel -lgecodeset -lgecodeint -lgecodekernel -lgecodesupport
+CXX_FLAGS = -std=c++11 -ggdb
+
+# A single-row measurement point for each configuration
+# Note that this rule extracts the configuration options from the target
+# file name and injects them as command-line arguments to the hexagon
+# binary. It also extracts the target version of the binary -- 1, 2 or
+# 3.
+hexagon-%.tex:
+	$(eval HEXAGON_V := $(shell echo $* | cut --delimiter=- --fields=1))
+	$(eval CONS := $(shell echo $* | cut --delimiter=- --fields=2))
+	$(eval PROP := $(shell echo $* | cut --delimiter=- --fields=3))
+	time $(RUNNER) "./hexagon$(HEXAGON_V)" \
+	$(HEXAGON_ARGS) \
+	--cmd-args="-ipl $(CONS) -propagation $(PROP)" \
+	--output=$@
+
+hexagon1: hexagon1.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ $(LIBS)
+hexagon2: hexagon2.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ $(LIBS)
+hexagon3: hexagon3.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ $(LIBS)
+
+%.o : %.cpp
+	$(CXX) $(CXX_FLAGS) -c -o $@ $^
+
+headings.tex:
+	rm -f $@
+	@for x in $(EXPERIMENTS_1); do \
+		echo $$x | sed "s|hexagon-1-\(.*\)\.tex|\1 \& |" >> $@; \
+	done
+
+hexagon1_comparison.tex: hexagon1 $(EXPERIMENTS_1) headings.tex
+	$(MERGE_TABLES) \
+	--append-as=rows \
+	--skip-columns=1 \
+	--skip-master-too \
+	--output=collated.tex \
+	$(EXPERIMENTS_1)
+
+	$(MERGE_TABLES) \
+	--append-as=columns \
+	--skip-columns=0 \
+	--heading="Combination & Time & Failures \\\\ \\midrule" \
+	--sort-by-col=1 \
+	--output=$@ \
+	headings.tex collated.tex
+
+hexagon2_comparison.tex: hexagon2 $(EXPERIMENTS_2) headings.tex
+	$(MERGE_TABLES) \
+	--append-as=rows \
+	--skip-columns=1 \
+	--skip-master-too \
+	--output=collated.tex \
+	$(EXPERIMENTS_2)
+
+	$(MERGE_TABLES) \
+	--append-as=columns \
+	--skip-columns=0 \
+	--heading="Combination & Time & Failures \\\\ \\midrule" \
+	--sort-by-col=1 \
+	--output=$@ \
+	headings.tex collated.tex
+
+hexagon3_comparison.tex: hexagon3 $(EXPERIMENTS_3) headings.tex
+	$(MERGE_TABLES) \
+	--append-as=rows \
+	--skip-columns=1 \
+	--skip-master-too \
+	--output=collated.tex \
+	$(EXPERIMENTS_3)
+
+	$(MERGE_TABLES) \
+	--append-as=columns \
+	--skip-columns=0 \
+	--heading="Combination & Time & Failures \\\\ \\midrule" \
+	--sort-by-col=1 \
+	--output=$@ \
+	headings.tex collated.tex
+
+
+# A rule to make arbitrary PDF graphs from LaTeX tables.
+graph-%.pdf: %.tex
+	$(GRAPH_TABLE) \
+	--skip-rows=1 \
+	--x-label="Problem size" \
+	--y-label="Runtime (s)" \
+	--x-range="8:750" --y-range="0:17" \
+	$^ $@
