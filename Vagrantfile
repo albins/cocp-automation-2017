@@ -13,7 +13,8 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/trusty64"
   # Customize the amount of memory on the VM (only VirtualBox)
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = "4096"
+    #vb.memory = "4096"
+    vb.memory = "8192"
     # vb.cpus = 8
     # vb.customize ["modifyvm", :id, "--ioapic", "on"]
   end
@@ -21,7 +22,7 @@ Vagrant.configure("2") do |config|
   # Install gecode,
   config.vm.provision "shell", inline: <<-SHELL
      apt-get update
-     apt-get install -y build-essential g++ libqt4-dev
+     apt-get install -y build-essential g++ libqt4-dev texlive-full python3 python3-matplotlib
      wget --quiet http://www.gecode.org/download/gecode-#{GECODE_VERSION}.tar.gz
      tar xvf gecode-#{GECODE_VERSION}.tar.gz
      cd gecode-#{GECODE_VERSION} && ./configure --prefix=/usr/ --with-qt --disable-examples && make && make install
