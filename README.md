@@ -20,4 +20,8 @@ See `Makefile.example` for suggestions on how to use these tools to
 automate performing certain experiments for inclusion into assignment
 reports.
 
+# Developing
+
+`python3 setup.py develop`
+
 

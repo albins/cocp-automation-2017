@@ -1,0 +1,43 @@
+global:
+  environment:
+    - GLOBAL_VAR: true
+
+runs:
+  assignment-A:
+    experiments:
+      - experiment-1
+    output:
+      - type: graph
+        file: A.pdf
+      - type: tex-table
+        file: A.tex
+
+experiment-1:
+  val_heuristic:
+    - int_val_max
+  var_heuristic:
+    - int_var_max
+  version:
+    - 0
+    - 1
+
+  combine:
+    options:
+      - val_heuristic
+      - var_heuristic
+      - version
+    with: cartesian-product
+
+  nrounds: 10
+  collate-with: median
+  timeout-ms: 5000
+  die-on-timeout: true
+  start: 8
+  stop: 10000
+  step-size: 5
+  command: "./queens{version}"
+  command-args:
+    - "-propagation {var_heuristic}"
+    - "{instance_size}"
+  environment:
+    - USE_SOMETHING: "{choice_variable}"

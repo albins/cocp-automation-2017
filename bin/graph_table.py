@@ -11,6 +11,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 log = logging.getLogger()
 
+
 def load_palette(palette_str):
     if not palette_str:
         return None
