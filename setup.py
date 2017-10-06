@@ -24,7 +24,7 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    install_requires=['matplotlib'],
+    install_requires=['matplotlib', 'cerberus', 'pyyaml'],
     scripts=['bin/conductor',
              'bin/merge_tables.py',
              'bin/graph_table.py',

@@ -1,6 +1,6 @@
 global:
   environment:
-    - GLOBAL_VAR: true
+    GLOBAL_VAR: true
 
 runs:
   assignment-A:
@@ -15,8 +15,10 @@ runs:
 experiment-1:
   val_heuristic:
     - int_val_max
+    - int_val_rnd
   var_heuristic:
     - int_var_max
+    - int_var_rnd
   version:
     - 0
     - 1
@@ -35,9 +37,9 @@ experiment-1:
   start: 8
   stop: 10000
   step-size: 5
+
   command: "./queens{version}"
   command-args:
     - "-propagation {var_heuristic}"
-    - "{instance_size}"
   environment:
-    - USE_SOMETHING: "{choice_variable}"
+    USE_SOMETHING: "{val_heuristic}"

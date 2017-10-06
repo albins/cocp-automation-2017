@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
+import conductor.conf
 
+import yaml
+
+EXIT_INVALID_CONF = 1
 
 
 if __name__ == '__main__':
-    pass
+    CONFIG_FILE = "doc/experiments.yaml"
+
+    with open(CONFIG_FILE) as conf_file:
+        errs, conf = conductor.conf.load_conf(yaml.load(conf_file))
+
+    if errs:
+        print("Invalid configuration file:\n")
+        print(yaml.safe_dump(errs, default_flow_style=False))
+        exit(EXIT_INVALID_CONF)
+
+    print(conf)
