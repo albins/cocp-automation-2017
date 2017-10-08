@@ -115,7 +115,7 @@ runs:
         file: queens_comparison.pdf
       - type: tex-table
         combine: split-experiments
-        heading: "$n$ & Time & Failures \\\\ \midrule"
+        heading: "$n$ & Time & Failures \\\\ \\midrule"
         timeout-symbol: Timeout
         sort-by: instance-size
         file-pattern: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
