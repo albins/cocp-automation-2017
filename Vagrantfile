@@ -8,9 +8,12 @@
 
 GECODE_VERSION = "5.1.0"
 GATHER_STATS_URL = "http://user.it.uu.se/~pierref/courses/COCP/homeworks/gather_stats.py"
+PYTHON_PACKAGES = "python3 python3-matplotlib python3-virtualenv python3-pip"
+GECODE_DEPS = "build-essential g++ libqt4-dev"
+EXTRA_PACKAGES = "texlive-full language-pack-en"
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "ubuntu/zesty64"
   # Customize the amount of memory on the VM (only VirtualBox)
   config.vm.provider "virtualbox" do |vb|
     #vb.memory = "4096"
@@ -22,7 +25,7 @@ Vagrant.configure("2") do |config|
   # Install gecode,
   config.vm.provision "shell", inline: <<-SHELL
      apt-get update
-     apt-get install -y build-essential g++ libqt4-dev texlive-full python3 python3-matplotlib language-pack-en
+     apt-get install -y #{GECODE_DEPS} #{PYTHON_PACKAGES} #{EXTRA_PACKAGES}
      wget --quiet http://www.gecode.org/download/gecode-#{GECODE_VERSION}.tar.gz
      tar xvf gecode-#{GECODE_VERSION}.tar.gz
      cd gecode-#{GECODE_VERSION} && ./configure --prefix=/usr/ --with-qt --disable-examples && make && make install
