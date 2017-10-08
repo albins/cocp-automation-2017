@@ -117,7 +117,8 @@ runs:
         combine: split-experiments
         heading: "$n$ & Time & Failures \\\\ \\midrule"
         timeout-symbol: Timeout
-        sort-by: instance-size
+        # Sort by the first column
+        sort-by: 0
         file-pattern: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
 ```
 
