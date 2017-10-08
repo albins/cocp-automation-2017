@@ -2,6 +2,11 @@ import os
 from contextlib import contextmanager
 import copy
 import itertools
+import argparse
+
+import daiquiri
+
+log = daiquiri.getLogger()
 
 
 @contextmanager
@@ -37,6 +42,28 @@ def cartesian_product(alternatives):
     return combinations
 
 
-
 def tuplewise(alternatives):
     pass
+
+
+def fmt_dict(d):
+    return ", ".join(["{}={}".format(k, v) for k, v in d.items()])
+
+
+def set_log_level_from_args(args, logger):
+    log_level = (max(3 - args.verbose_count, 0) * 10)
+    logger.setLevel(log_level)
+
+
+def setup_verbosity_flags(parser):
+    parser.add_argument('--verbose', '-v',
+                        action='count',
+                        dest='verbose_count',
+                        help="enable more verbose logging",
+                        default=0)
+
+
+def make_base_parser():
+    parser = argparse.ArgumentParser(description="")
+    setup_verbosity_flags(parser)
+    return parser

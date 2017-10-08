@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
+import conductor.common
 import conductor.conf
 
+from conductor.run_experiments import run_experiments
+
 import yaml
+import daiquiri
+
+log = daiquiri.getLogger()
 
 EXIT_INVALID_CONF = 1
 
 
 if __name__ == '__main__':
+    parser = conductor.common.make_base_parser()
+    # parser.add_argument('config',
+    #                    type=argparse.FileType('r'))
     CONFIG_FILE = "doc/experiments.yaml"
+
+    args = parser.parse_args()
+    daiquiri.setup()
+    conductor.common.set_log_level_from_args(args, log)
 
     with open(CONFIG_FILE) as conf_file:
         errs, conf = conductor.conf.load_conf(yaml.load(conf_file))
@@ -17,4 +30,32 @@ if __name__ == '__main__':
         print(yaml.safe_dump(errs, default_flow_style=False))
         exit(EXIT_INVALID_CONF)
 
-    print(conf)
+    log.info("Loaded %d experiment(s) with %d configurations",
+             len(conf['experiments']),
+             sum([len(e['commands']) for e in conf['experiments'].values()]))
+
+    for exp_name, exp_setup in conf['experiments'].items():
+        log.info("Running experiment %s", exp_name)
+
+        commands = exp_setup['commands']
+        results = {}
+        for command_context in commands:
+            command_env = command_context['environment']
+            command = command_context['command']
+            settings = command_context.get('settings', {})
+            args = command_context['args']
+            option_combination = ",".join(["{}={}".format(option, value)
+                                           for option, value in
+                                           command_context['option-combination'].items()])
+
+            with conductor.common.temp_env(command_env):
+                try:
+                    results[option_combination] = run_experiments(
+                        command,
+                        args,
+                        settings=settings)
+                except Exception as e:
+                    log.error(("Error %s when executing command %s with"
+                               " arguments %s for experiment %s"),
+                              e, command, " ".join(args), exp_name)
+    print(yaml.safe_dump(results, default_flow_style=False))

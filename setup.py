@@ -24,9 +24,10 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    install_requires=['matplotlib', 'cerberus', 'pyyaml'],
+    install_requires=['matplotlib', 'cerberus', 'pyyaml', 'daiquiri'],
     scripts=['bin/conductor',
              'bin/merge_tables.py',
              'bin/graph_table.py',
-             'bin/runner.py'],
+             'bin/runner.py',
+             'conductor/gather_stats.py'],
 )

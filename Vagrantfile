@@ -22,7 +22,7 @@ Vagrant.configure("2") do |config|
   # Install gecode,
   config.vm.provision "shell", inline: <<-SHELL
      apt-get update
-     apt-get install -y build-essential g++ libqt4-dev texlive-full python3 python3-matplotlib
+     apt-get install -y build-essential g++ libqt4-dev texlive-full python3 python3-matplotlib language-pack-en
      wget --quiet http://www.gecode.org/download/gecode-#{GECODE_VERSION}.tar.gz
      tar xvf gecode-#{GECODE_VERSION}.tar.gz
      cd gecode-#{GECODE_VERSION} && ./configure --prefix=/usr/ --with-qt --disable-examples && make && make install

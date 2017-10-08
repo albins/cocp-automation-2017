@@ -30,16 +30,33 @@ experiment-1:
       - version
     with: cartesian-product
 
-  nrounds: 10
-  collate-with: median
+  # Override run options for experiments using random-based heuristics
+  override-settings:
+    - option: val_heuristic
+      value: int_val_rnd
+      settings:
+        nrounds: 10
+        collate-with: median
+
+    - option: var_heuristic
+      value: int_var_rnd
+      settings:
+        nrounds: 10
+        collate-with: median
+
+  # Default options
+  nrounds: 1
+  run-at-least: 1
   timeout-ms: 5000
   die-on-timeout: true
+  collate-with: first
   start: 8
   stop: 10000
   step-size: 5
 
-  command: "./queens{version}"
+  command: "./sample.py"
   command-args:
-    - "-propagation {var_heuristic}"
+    - "-propagation"
+    - "{var_heuristic}"
   environment:
     USE_SOMETHING: "{val_heuristic}"
