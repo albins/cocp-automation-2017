@@ -135,6 +135,10 @@ table per combination, named `queens1_comparison_int_val_rnd_int_var_rnd.tex`, e
 
 Indices for the data (x-index and y-index) are 0, 1, or 2, where 0 is n (instance size), 1 is the runtime in seconds, and 2 is the number of failures.
 
+Here is a sample output graph:
+
+![Sample graph](selection-comparison.png)
+
 # Other Utilities
 This package installs the following scripts in your `$PATH`, in addition
 to Conductor:
