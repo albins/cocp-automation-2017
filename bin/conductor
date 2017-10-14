@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser = conductor.common.make_base_parser()
     # parser.add_argument('config',
     #                    type=argparse.FileType('r'))
-    CONFIG_FILE = "doc/experiments.yaml"
+    CONFIG_FILE = "experiments.yaml"
 
     args = parser.parse_args()
     daiquiri.setup()
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     runs = conf['runs']
 
     for exp_name, exp_setup in conf['experiments'].items():
-        log.info("Running experiment %s", exp_name)
+        log.info("Running experiment %s, go hit the milk bar!", exp_name)
 
         commands = exp_setup['commands']
         results = {}
