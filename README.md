@@ -133,6 +133,8 @@ $ conductor --run assignment-A
 And would produce a comparison graph in `queens_comparison.pdf` and one
 table per combination, named `queens1_comparison_int_val_rnd_int_var_rnd.tex`, etc.
 
+Indices for the data (x-index and y-index) are 0, 1, or 2, where 0 is n (instance size), 1 is the runtime in seconds, and 2 is the number of failures.
+
 # Other Utilities
 This package installs the following scripts in your `$PATH`, in addition
 to Conductor:
