@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import conductor.common
 import conductor.conf
+import conductor.generate
 
 from conductor.run_experiments import run_experiments
 
@@ -34,6 +35,11 @@ if __name__ == '__main__':
              len(conf['experiments']),
              sum([len(e['commands']) for e in conf['experiments'].values()]))
 
+
+    experiment_results = {}
+
+    runs = conf['runs']
+
     for exp_name, exp_setup in conf['experiments'].items():
         log.info("Running experiment %s", exp_name)
 
@@ -58,4 +64,16 @@ if __name__ == '__main__':
                     log.error(("Error %s when executing command %s with"
                                " arguments %s for experiment %s"),
                               e, command, " ".join(args), exp_name)
-    print(yaml.safe_dump(results, default_flow_style=False))
+        experiment_results[exp_name] = results
+
+
+    log.info("Generating artifacts...")
+
+    for run_name, run_config in runs.items():
+        log.info("Handling run %s", run_name)
+        experiments = {exp_name: experiment_results[exp_name]
+                       for exp_name in run_config['experiments']}
+        outputs = run_config['output']
+
+        for output in outputs:
+            conductor.generate.generate_output(output, experiments)

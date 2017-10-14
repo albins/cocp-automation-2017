@@ -104,7 +104,7 @@ def load_conf(conf_dict):
             combinator = COMBINATORS[combine["with"]]
             command_template = settings.pop("command")
             args_templates = settings.pop("command-args")
-            environment_template = settings.pop("environment")
+            environment_template = settings.pop("environment", {})
 
             override_settings = settings.pop("override-settings", {})
 

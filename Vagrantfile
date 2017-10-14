@@ -8,7 +8,7 @@
 
 GECODE_VERSION = "5.1.0"
 GATHER_STATS_URL = "http://user.it.uu.se/~pierref/courses/COCP/homeworks/gather_stats.py"
-PYTHON_PACKAGES = "python3 python3-matplotlib python3-virtualenv python3-pip"
+PYTHON_PACKAGES = "python3.6 python3-matplotlib python3-virtualenv python3-pip python3-tk"
 GECODE_DEPS = "build-essential g++ libqt4-dev"
 EXTRA_PACKAGES = "texlive-full language-pack-en"
 
@@ -18,8 +18,8 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     #vb.memory = "4096"
     vb.memory = "8192"
-    # vb.cpus = 8
-    # vb.customize ["modifyvm", :id, "--ioapic", "on"]
+    vb.cpus = 8
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
   # Install gecode,

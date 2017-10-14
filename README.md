@@ -16,7 +16,7 @@ This repository contains a Pip package for Conductor, which means it can
 be installed using:
 
 ```
-$ pip3 install https://github.com/albins/cocp-automation-2017
+$ pip3 install git+https://github.com/albins/cocp-automation-2017
 ```
 
 You can also do `python3 setup.py develop` or `python3 setup.py install`
@@ -36,7 +36,7 @@ file, by default assumed to be in the present directory and called
 `doc/experiments.yaml`.
 
 The following features are implemented:
-- Creating cross/cartesian product combinations of options
+- Creating cartesian product combinations of options (other means of combination forthcoming)
 - Using templates to set command-line options and environment variables
   for experiments
 - Override experiment runner options for certain combinations (e.g. run
@@ -102,7 +102,7 @@ This will run a series of commands, e.g.
 The configuration key `runs` contains a set (dictionary really) of
 mappings between experiment names and their desired outputs. This
 example would produce a run named "assignment-A" that produces a number
-of LaTeX tables table and a graph of the results:
+of LaTeX tables and a graph of the results:
 
 ``` yaml
 runs:
@@ -113,13 +113,15 @@ runs:
       - type: graph
         label: "queens{version} with {var_heuristic}/{val_heuristic}"
         file: queens_comparison.pdf
+        x-index: 0
+        y-index: 1
       - type: tex-table
-        combine: split-experiments
+        combine: rows
         heading: "$n$ & Time & Failures \\\\ \\midrule"
         timeout-symbol: Timeout
         # Sort by the first column
         sort-by: 0
-        file-pattern: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
+        file: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
 ```
 
 This experiment setup would be invoked by:
