@@ -116,8 +116,12 @@ runs:
         x-index: 0
         y-index: 1
       - type: tex-table
-        combine: rows
+        combine-experiments:
+          using: rows
+          # skip-columns: 0
+          # skip-rows: 1
         heading: "$n$ & Time & Failures \\\\ \\midrule"
+        # Apparently, other symbols makes the TAs grumpy :(
         timeout-symbol: Timeout
         # Sort by the first column
         sort-by: 0
@@ -141,7 +145,7 @@ Here is a sample output graph:
 
 # Other Utilities
 This package installs the following scripts in your `$PATH`, in addition
-to Conductor:
+to Conductor (as `conductor`):
 
 - `runner.py` -- a script to run and record results in Gecode as LaTeX
   tables

@@ -79,10 +79,78 @@ def generate_graph(graph_cfg, experiment_data):
                      y_label=y_label)
 
 
+def write_table(filename, heading, table_rows, timeout_symbol, sort_by):
+    log.info("Writing %d table rows to %s", len(table_rows), filename)
+    index_fn = lambda row: row[sort_by]
+    table_rows.sort(key=index_fn)
+
+    with open(filename, "w") as output_file:
+        output_file.write(heading + '\n')
+        for size, runtime, failures in table_rows:
+            if runtime == float("inf"):
+                runtime_s = timeout_symbol
+            else:
+                runtime_s = "{:.3f}".format(runtime)
+            formatted_row = ("{:d} & {} & {} \\\\"
+                             .format(size, runtime_s, failures))
+
+            output_file.write(formatted_row + "\n")
+            log.debug("Wrote TeX row: %s", formatted_row)
+
+
+def handle_append(table, experiment, method, skip_rows, skip_columns):
+    """
+    In-place append the given experiment data to table according to the
+    desired method.
+    """
+    log.debug("Appending %d lines to table using %s, skipping %d rows and %d columns",
+              len(experiment), method, skip_rows, skip_columns)
+
+
+def generate_tables(output_cfg, experiments):
+    """
+    Output one or more LaTeX tables.
+    """
+    heading_template = output_cfg['heading']
+    timeout_symbol = output_cfg['timeout-symbol']
+    sort_by = output_cfg['sort-by']
+    filename_template = output_cfg['file']
+    combination_method = output_cfg['combine-experiments']['using']
+    skip_rows = output_cfg['combine-experiments'].get('skip-rows', 0)
+    skip_columns = output_cfg['combine-experiments'].get('skip-columns', 0)
+
+    tables = defaultdict(list)
+    headings = {}
+
+    for experiment in experiments:
+        for setup_s, results in experiment.items():
+            setup = conductor.common.deserialise_options(setup_s)
+            file_name = filename_template.format(**setup)
+
+            if file_name in tables:
+                handle_append(tables, results,
+                          method=combination_method,
+                              skip_rows=skip_rows,
+                              skip_columns=skip_columns)
+                continue
+
+            heading = heading_template.format(**setup)
+            headings[file_name] = heading
+            tables[file_name] = results
+
+    for filename, table_rows in tables.items():
+        heading = headings[filename]
+        write_table(filename,
+                    heading,
+                    table_rows,
+                    sort_by=sort_by,
+                    timeout_symbol=timeout_symbol)
+
+
 def generate_output(output_cfg, experiments):
     if output_cfg['type'] == 'graph':
         generate_graph(output_cfg, list(experiments.values())[0])
     elif output_cfg['type'] == 'tex-table':
-        pass
+        generate_tables(output_cfg, experiments.values())
     else:
         assert False, "Unknown output type %s" % output_cfg['type']

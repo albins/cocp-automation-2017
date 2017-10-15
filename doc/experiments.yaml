@@ -13,7 +13,16 @@ runs:
         y-index: 1
         file: A.pdf
       - type: tex-table
-        file: A.tex
+        combine-experiments:
+          using: rows
+          skip-columns: 0
+          skip-rows: 0
+        heading: "$n$ & Time & Failures \\\\ \\midrule"
+        # Apparently, other symbols makes the TAs grumpy :(
+        timeout-symbol: Timeout
+        # Sort by the first column
+        sort-by: 0
+        file: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
 
 experiment-1:
   val_heuristic:

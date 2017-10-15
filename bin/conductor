@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser = conductor.common.make_base_parser()
     # parser.add_argument('config',
     #                    type=argparse.FileType('r'))
-    CONFIG_FILE = "experiments.yaml"
+    CONFIG_FILE = "doc/experiments.yaml"
 
     args = parser.parse_args()
     daiquiri.setup()
