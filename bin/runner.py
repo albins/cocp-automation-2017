@@ -54,14 +54,14 @@ if __name__ == '__main__':
 
     daiquiri.setup()
     conductor.common.set_log_level_from_args(args, log)
+    cmd_args = args.cmd_args.split(" ") if args.cmd_args else []
 
     results = conductor.run_experiments.run_experiments(
         args.command,
-        args.cmd_args,
+        cmd_args,
         settings={
             'collate-with': args.collate_with,
             'nrounds': args.nrounds,
-            'cmd-args': args.cmd_args.split(" ") if args.cmd_args else [],
             'die-on-timeout': args.die_on_timeout,
             'run-at-least': args.run_at_least,
             'timeout-ms': args.timeout_ms,
