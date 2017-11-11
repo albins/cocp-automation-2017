@@ -13,7 +13,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 log = daiquiri.getLogger()
 
 
-def plot_data_as_pdf(data, filename, x_label, y_label):
+def plot_data_as_pdf(data, filename, x_label, y_label, legend_loc=None):
     """
     Take data on the form label: [x-values, y-values] and plot a graph
     to a given file name.
@@ -27,7 +27,10 @@ def plot_data_as_pdf(data, filename, x_label, y_label):
         for label, (xs, ys) in data.items():
             ax.plot(xs, ys, label=label)
 
-        ax.legend(loc="upper right")
+        if not legend_loc:
+            legend_loc = "upper right"
+
+        ax.legend(loc=legend_loc)
         pp.savefig()
 
 
@@ -44,6 +47,7 @@ def generate_graph(graph_cfg, experiment_data, translations):
     y_axis_index = graph_cfg.get('y-index', 1)
     x_label = graph_cfg.get('x-label', "")
     y_label = graph_cfg.get('y-label', "")
+    legend_loc = graph_cfg.get('legend-loc', None)
 
     # label -> (x-values, y-values)
     plots = defaultdict(lambda: ([], []))
@@ -74,6 +78,7 @@ def generate_graph(graph_cfg, experiment_data, translations):
         plots[rendered_label] = ([*old_xs, *xs], [*old_ys, *ys])
 
     plot_data_as_pdf(plots,
+                     legend_loc=legend_loc,
                      filename=graph_cfg['file'],
                      x_label=x_label,
                      y_label=y_label)

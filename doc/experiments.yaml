@@ -23,6 +23,16 @@ runs:
         # Sort by the first column
         sort-by: 0
         file: "queens{version}_comparison_{var_heuristic}_{val_heuristic}.tex"
+    - type: text-file
+      combine-experiments:
+        using: rows
+        skip-columns: 0
+        skip-rows: 0
+      preamble: "$n$ & $s$ & Time & Failures \\\\ \\midrule"
+      postamble: "\\midrule"
+      replace-string: "inf:Timeout"
+      row-format: "{n} & {s} & & {runtime} & {failures} \\\\"
+      file: "outputs.tex"
 
 experiment-1:
   val_heuristic:
