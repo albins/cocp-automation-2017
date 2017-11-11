@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser = conductor.common.make_base_parser()
     # parser.add_argument('config',
     #                    type=argparse.FileType('r'))
-    CONFIG_FILE = "doc/experiments.yaml"
+    CONFIG_FILE = "experiments.yaml"
 
     args = parser.parse_args()
     daiquiri.setup()
@@ -75,5 +75,7 @@ if __name__ == '__main__':
                        for exp_name in run_config['experiments']}
         outputs = run_config['output']
 
+        translations = run_config.get('translate', {})
+
         for output in outputs:
-            conductor.generate.generate_output(output, experiments)
+            conductor.generate.generate_output(output, experiments, translations)

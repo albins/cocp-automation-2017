@@ -31,7 +31,7 @@ def plot_data_as_pdf(data, filename, x_label, y_label):
         pp.savefig()
 
 
-def generate_graph(graph_cfg, experiment_data):
+def generate_graph(graph_cfg, experiment_data, translations):
     """
     Generate a PDF graph with a given configuration and a single
     instance of experiment data.
@@ -49,7 +49,7 @@ def generate_graph(graph_cfg, experiment_data):
     plots = defaultdict(lambda: ([], []))
 
     for exp_cfg_s, exp_results in experiment_data.items():
-        exp_cfg = conductor.common.deserialise_options(exp_cfg_s)
+        exp_cfg = conductor.common.deserialise_options(exp_cfg_s, translations)
         rendered_label = label_pattern.format(**exp_cfg)
         log.info("Adding plot with label %s", rendered_label)
 
@@ -107,7 +107,7 @@ def handle_append(table, experiment, method, skip_rows, skip_columns):
               len(experiment), method, skip_rows, skip_columns)
 
 
-def generate_tables(output_cfg, experiments):
+def generate_tables(output_cfg, experiments, translations):
     """
     Output one or more LaTeX tables.
     """
@@ -124,7 +124,7 @@ def generate_tables(output_cfg, experiments):
 
     for experiment in experiments:
         for setup_s, results in experiment.items():
-            setup = conductor.common.deserialise_options(setup_s)
+            setup = conductor.common.deserialise_options(setup_s, translations)
             file_name = filename_template.format(**setup)
 
             if file_name in tables:
@@ -147,10 +147,10 @@ def generate_tables(output_cfg, experiments):
                     timeout_symbol=timeout_symbol)
 
 
-def generate_output(output_cfg, experiments):
+def generate_output(output_cfg, experiments, translations):
     if output_cfg['type'] == 'graph':
-        generate_graph(output_cfg, list(experiments.values())[0])
+        generate_graph(output_cfg, list(experiments.values())[0], translations)
     elif output_cfg['type'] == 'tex-table':
-        generate_tables(output_cfg, experiments.values())
+        generate_tables(output_cfg, experiments.values(), translations)
     else:
         assert False, "Unknown output type %s" % output_cfg['type']

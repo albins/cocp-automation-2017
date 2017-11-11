@@ -75,16 +75,28 @@ def make_base_parser():
     return parser
 
 
-def deserialise_options(option_s):
+def deserialise_options(option_s, translations):
     """
     Take a serialised dictionary on the form key=value,key=value... and
     return an actual dictionary.
+
+    translations is a dictionary of keys to key/value pairs of replacements.
     """
     pairs = option_s.split(",")
 
     options = {}
     for pair in pairs:
         k, v = [s.strip() for s in pair.split("=")]
+
+        translation = translations.get(k, None)
+        if translation:
+            for matched_v, replacement_v in translation.items():
+                if str(matched_v) == str(v):
+                    log.info("Replacing %s=%s with '%s'", k, v, replacement_v)
+                    v = replacement_v
+
+
+
         options[k] = v
     return options
 
