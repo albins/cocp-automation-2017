@@ -28,6 +28,38 @@ as usual (e.g. `vagrant up`). The resulting box will have everything you
 need already installed, and your project directory will be available in
 `/vagrant/` after entering the machine using `vagrant ssh`.
 
+## On University Machines
+
+This has ben attempted at myrdal, but other servers might work as well.
+
+1. Set up a Python 3 virtual environment (this example stores it in the directory `myvenv`, but you can choose your own):
+
+```
+$ virtualenv --python=python3 myvenv
+$ source myvenv/bin/activate
+```
+2. Install Conductor:
+
+```
+(myvenv) $ pip3 install git+https://github.com/albins/cocp-automation-2017
+# wait roughly 4000 years
+```
+3. Run experiments
+
+```
+(myvenv) $ cd ~/my-experiments/
+(myvenv) $ conductor -v
+```
+
+4. Mischief managed!
+
+```
+(myvenv) $ deactivate
+$
+```
+
+In the future, you only need to activate the virtual environment (`source ...`). If you are using `screen` (and you should!) to keep your experiments running after your console inevitably is disconnected due to lousy wi-fi, remember to do the entire `source .../activate` dance _inside_ screen.
+
 # Usage and Examples
 
 You configure your experiments for Conductor using a YAML configuration
