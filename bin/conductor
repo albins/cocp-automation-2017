@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
         commands = exp_setup['commands']
         results = {}
-        for command_context in commands:
+        for i, command_context in enumerate(commands):
             command_env = command_context['environment']
             command = command_context['command']
             settings = command_context.get('settings', {})
@@ -56,6 +56,8 @@ if __name__ == '__main__':
 
             with conductor.common.temp_env(command_env):
                 try:
+                    log.info("Running configuration {}/{}".format(
+                        i + 1, len(commands)))
                     results[option_combination] = run_experiments(
                         command,
                         args,

@@ -104,7 +104,11 @@ def run_experiments(command, args, settings):
                 runtimes.append(float(runtime))
             except ValueError:
                 runtimes.append(float("inf"))
+
             failures_l.append(int(failures))
+            # Die early on timeout
+            if settings['die-on-timeout'] and runtimes[-1] == float("inf"):
+                break
 
         runtime = collate_fn(runtimes)
         failures = int(collate_fn(failures_l))
