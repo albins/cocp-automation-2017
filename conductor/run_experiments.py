@@ -4,12 +4,16 @@ from conductor.common import fmt_dict
 from statistics import median, mean
 import subprocess
 import sys
+import re
 
 import daiquiri
 
 log = daiquiri.getLogger()
 
 
+RUNTIME_RE = r"\s*runtime:.*\((?P<timeout_ms>[0-9\.]+)\s+ms\).*"
+REASON_RE = r"\s*reason:\s+(?P<reason>.*)"
+FAILURES_RE = r"\s*failures:\s+(?P<failures>.*)"
 # This was experimentally verified and not mentioned anywhere? YMMV
 # here.
 ERR_OOM = -9
@@ -22,7 +26,54 @@ class OutOfMemory(Exception):
     pass
 
 
-def run_experiment(command, timeout_ms, size, cmd_args=[]):
+def parse_gecode_output(in_file, capture=None):
+    timeout_re = re.compile(RUNTIME_RE)
+    reason_re = re.compile(REASON_RE)
+    failures_re = re.compile(FAILURES_RE)
+    runtime = None
+    reason = None
+    failures = None
+    captures = {}
+
+    for line in in_file:
+        if not line.strip():
+            continue
+        #log.debug("Read line: %s", line)
+        tout_match = timeout_re.match(line)
+
+        if capture:
+            for c_name, c in capture.items():
+                convert_fn = c['type']
+                capture_re = re.compile(c['regex'])
+                match = capture_re.match(line)
+                if match and not (c_name in captures and c['use'] == 'first'):
+                    log.debug("Re %s matched: %s", c_name, match)
+                    captures[c_name] = convert_fn(match.group(c_name))
+
+
+        if failures_re.match(line):
+            failures = int(failures_re.match(line).group('failures'))
+            continue
+
+        # Don't match if we have timed out
+        if tout_match and not runtime:
+            runtime = float(tout_match.group('timeout_ms'))
+            continue
+
+        if reason_re.match(line):
+            reason = reason_re.match(line).group('reason')
+            log.debug("Stopped search with message '%s'", reason)
+            if "time" in reason:
+                runtime = float("inf")
+
+    assert runtime, "Found no runtime in the input!"
+
+    return {'runtime': runtime / 1000,
+            'failures': failures,
+            **captures}
+
+
+def run_experiment(command, timeout_ms, size, cmd_args=[], capture=None):
     cli_args = [command,
                 '-time',
                 str(timeout_ms),
@@ -34,9 +85,9 @@ def run_experiment(command, timeout_ms, size, cmd_args=[]):
         result = subprocess.check_output(cli_args)\
                            .decode('utf-8').split('\n')
         try:
-            d = conductor.gather_stats.parse_stdin(result)
-            runtime = str(d['runtime'])
-            failures = str(d['failures'])
+            res = parse_gecode_output(result, capture=capture)
+            log.info("Captured data: %s", res)
+            return res
         except KeyError as e:
             log.error("Invalid output from command %s: %s",
                       command,
@@ -50,9 +101,6 @@ def run_experiment(command, timeout_ms, size, cmd_args=[]):
             raise OutOfMemory()
         else:
             raise e
-
-    return (runtime, failures)
-
 
 def run_experiments(command, args, settings):
     """
@@ -81,38 +129,52 @@ def run_experiments(command, args, settings):
     else:
         assert False, "Unsupported collate type %s" % settings['collate-with']
 
+    capture = settings.get('capture', {})
+    for c_name, c_opts in capture.items():
+        capture[c_name]['type'] = lambda x: int(x)
+
     results = []
     for instance_size in range(settings['start'], settings['stop'] + 1,
                                settings['step-size']):
         for _ in range(0, settings['nrounds']):
             size = instance_size
-            runtimes, failures_l = [], []
+            runtimes, failures_l, res_l = [], [], []
 
             try:
-                runtime, failures = run_experiment(
+                res = run_experiment(
                     command,
                     settings['timeout-ms'],
                     instance_size,
-                    args)
+                    args,
+                    capture=capture)
+                runtime = res['runtime']
+                failures = res['failures']
 
             except OutOfMemory:
                 runtime = float("inf")
                 failures = 0  # I wish there were a better solution than this!
 
             log.debug("{} {} {}".format(size, runtime, failures))
-            try:
-                runtimes.append(float(runtime))
-            except ValueError:
-                runtimes.append(float("inf"))
-
+            runtimes.append(float(runtime))
             failures_l.append(int(failures))
+
+            del res['runtime']
+            del res['failures']
+
+            res_l.append(res)
+
             # Die early on timeout
             if settings['die-on-timeout'] and runtimes[-1] == float("inf"):
                 break
 
         runtime = collate_fn(runtimes)
         failures = int(collate_fn(failures_l))
-        results.append((size, runtime, failures))
+        results.append({'size': instance_size,
+                        'runtime': runtime,
+                        'failures': failures,
+                        # Fixme: this is slightly controversial: use the
+                        # captured results from the first run.
+                        **res_l[0]})
         if runtime == float("inf") and \
            instance_size >= settings['run-at-least'] and \
            settings['die-on-timeout']:

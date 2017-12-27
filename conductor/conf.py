@@ -65,6 +65,11 @@ EXPERIMENT_SCHEMA = {'type': 'dict',
                                 'environment':
                                 {'type': 'dict',
                                  'required': False},
+                                'capture':
+                                {'type': 'dict',
+                                 'default': {},
+                                 # FIXME validate members
+                                 'required': False},
                      }
 }
 

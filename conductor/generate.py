@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import daiquiri
 import matplotlib
+from itertools import repeat
 # This disables interactive back-ends for
 # Matplotlib. Maybe. Possibly. No-one seems to know what it does.
 matplotlib.use('Agg')
@@ -43,8 +44,8 @@ def generate_graph(graph_cfg, experiment_data, translations):
     # dump it according to settings
 
     label_pattern = graph_cfg.get('label', "")
-    x_axis_index = graph_cfg.get('x-index', 0)
-    y_axis_index = graph_cfg.get('y-index', 1)
+    x_axis_index = graph_cfg.get('x-index')
+    y_axis_index = graph_cfg.get('y-index')
     x_label = graph_cfg.get('x-label', "")
     y_label = graph_cfg.get('y-label', "")
     legend_loc = graph_cfg.get('legend-loc', None)
@@ -64,7 +65,7 @@ def generate_graph(graph_cfg, experiment_data, translations):
             try:
                 xv, yv = float(r[x_axis_index]), float(r[y_axis_index])
                 if xv == float("inf") or yv == float("inf"):
-                    log.warning("Skipping infinite measurement!")
+                    log.info("Skipping infinite measurement!")
                     continue
                 xs.append(xv)
                 ys.append(yv)
@@ -84,32 +85,14 @@ def generate_graph(graph_cfg, experiment_data, translations):
                      y_label=y_label)
 
 
-def write_table(filename, heading, table_rows, timeout_symbol, sort_by):
+def write_table(filename, heading, table_rows):
     log.info("Writing %d table rows to %s", len(table_rows), filename)
-    index_fn = lambda row: row[sort_by]
-    table_rows.sort(key=index_fn)
 
     with open(filename, "w") as output_file:
         output_file.write(heading + '\n')
-        for size, runtime, failures in table_rows:
-            if runtime == float("inf"):
-                runtime_s = timeout_symbol
-            else:
-                runtime_s = "{:.3f}".format(runtime)
-            formatted_row = ("{:d} & {} & {} \\\\"
-                             .format(size, runtime_s, failures))
-
-            output_file.write(formatted_row + "\n")
-            log.debug("Wrote TeX row: %s", formatted_row)
-
-
-def handle_append(table, experiment, method, skip_rows, skip_columns):
-    """
-    In-place append the given experiment data to table according to the
-    desired method.
-    """
-    log.debug("Appending %d lines to table using %s, skipping %d rows and %d columns",
-              len(experiment), method, skip_rows, skip_columns)
+        for row in table_rows:
+            output_file.write(row + "\n")
+            log.debug("Wrote row: %s", row)
 
 
 def generate_tables(output_cfg, experiments, translations):
@@ -117,45 +100,57 @@ def generate_tables(output_cfg, experiments, translations):
     Output one or more LaTeX tables.
     """
     heading_template = output_cfg['heading']
-    timeout_symbol = output_cfg['timeout-symbol']
+    timeout_symbol = output_cfg.get('timeout-symbol', None)
     sort_by = output_cfg['sort-by']
     filename_template = output_cfg['file']
-    combination_method = output_cfg['combine-experiments']['using']
-    skip_rows = output_cfg['combine-experiments'].get('skip-rows', 0)
-    skip_columns = output_cfg['combine-experiments'].get('skip-columns', 0)
+    row_template = output_cfg['row-format']
 
     tables = defaultdict(list)
     headings = {}
+
+
+    def sort_key_fn(res):
+        return res.get(sort_by)
 
     for experiment in experiments:
         for setup_s, results in experiment.items():
             setup = conductor.common.deserialise_options(setup_s, translations)
             file_name = filename_template.format(**setup)
-
-            if file_name in tables:
-                handle_append(tables, results,
-                          method=combination_method,
-                              skip_rows=skip_rows,
-                              skip_columns=skip_columns)
-                continue
-
             heading = heading_template.format(**setup)
             headings[file_name] = heading
-            tables[file_name] = results
+            tables[file_name] += list(zip(results, repeat(setup)))
 
-    for filename, table_rows in tables.items():
+    for filename, results_and_setup in tables.items():
         heading = headings[filename]
+        table_rows = []
+
+        # sort everything globally
+        results_and_setup.sort(key=lambda x: sort_key_fn(x[0]), reverse=False)
+
+        # render row-by-row
+        for row, setup in results_and_setup:
+            if row['runtime'] == float("inf") and timeout_symbol:
+                row['runtime'] = timeout_symbol
+
+            # Render the row
+            try:
+                table_rows.append(row_template.format(**{**setup, **row}))
+            except (ValueError, KeyError) as e:
+                log.error("Error rendering template: %s", row_template)
+                log.error("With data %s", {**setup, **row})
+                log.error("Exception was %s", e)
+                continue
+
         write_table(filename,
                     heading,
-                    table_rows,
-                    sort_by=sort_by,
-                    timeout_symbol=timeout_symbol)
+                    table_rows)
 
 
 def generate_output(output_cfg, experiments, translations):
     if output_cfg['type'] == 'graph':
         generate_graph(output_cfg, list(experiments.values())[0], translations)
-    elif output_cfg['type'] == 'tex-table':
+        pass
+    elif output_cfg['type'] == 'text-file':
         generate_tables(output_cfg, experiments.values(), translations)
     else:
         assert False, "Unknown output type %s" % output_cfg['type']
