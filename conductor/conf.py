@@ -3,6 +3,7 @@ from conductor.run_experiments import ALLOWED_COLLATE_METHODS
 
 import cerberus
 import daiquiri
+import jinja2
 
 log = daiquiri.getLogger()
 
@@ -11,8 +12,9 @@ CONF_SCHEMA = {'global': {'type': 'dict'},
 
 EXPERIMENT_SCHEMA = {'type': 'dict',
                      # These are option combinations
-                     'allow_unknown': {'type': 'list',
-                                       'minlength': 1},
+                     'allow_unknown': {'oneof': [{'type': 'list',
+                                                  'minlength': 1},
+                                                 {'type': 'string'}]},
                      'schema': {'collate-with':
                                 {'type': 'string',
                                  'allowed': ALLOWED_COLLATE_METHODS,
@@ -77,6 +79,10 @@ EXPERIMENT_SCHEMA = {'type': 'dict',
 COMBINATORS = {'cartesian-product': cartesian_product,
                'tuplewise': tuplewise}
 
+def handle_template(output, templ_heading):
+    if templ_heading in output:
+        output[templ_heading] = jinja2.Template(output[templ_heading])
+
 
 def load_conf(conf_dict):
     """
@@ -98,6 +104,15 @@ def load_conf(conf_dict):
         global_settings = res.pop("global", {})
         runs = res.pop("runs", {})
 
+        for run_name, run_content in runs.items():
+            log.info("Compiling templates for %s", run_name)
+            outputs = run_content.get("output")
+
+            for output in outputs:
+                for field in ['heading', 'row-format', 'file', 'label']:
+                    handle_template(output, field)
+
+
         experiments = {}
 
         # Only experiments remain
@@ -116,6 +131,12 @@ def load_conf(conf_dict):
             options = {}
             for option_key in combine['options']:
                 option_values = settings.pop(option_key)
+
+                # special case: a range expression
+                if isinstance(option_values, str):
+                    start, stop, step = [int(i) for i in option_values.split(":")]
+                    option_values = list(range(start, stop + 1, step))
+
                 options[option_key] = option_values
 
             commands = []

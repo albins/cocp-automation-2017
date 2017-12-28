@@ -26,6 +26,10 @@ class OutOfMemory(Exception):
     pass
 
 
+class Timeout(Exception):
+    pass
+
+
 def parse_gecode_output(in_file, capture=None):
     timeout_re = re.compile(RUNTIME_RE)
     reason_re = re.compile(REASON_RE)
@@ -73,12 +77,8 @@ def parse_gecode_output(in_file, capture=None):
             **captures}
 
 
-def run_experiment(command, timeout_ms, size, cmd_args=[], capture=None):
-    cli_args = [command,
-                '-time',
-                str(timeout_ms),
-                *[str(a) for a in cmd_args],
-                str(size)]
+def run_experiment(command, cmd_args, capture=None):
+    cli_args = [command, *[str(a) for a in cmd_args]]
 
     log.debug("Invoking command %s", " ".join(cli_args))
     try:
@@ -130,53 +130,43 @@ def run_experiments(command, args, settings):
         assert False, "Unsupported collate type %s" % settings['collate-with']
 
     capture = settings.get('capture', {})
-    for c_name, c_opts in capture.items():
+    for c_name, _c_opts in capture.items():
         capture[c_name]['type'] = lambda x: int(x)
 
     results = []
-    for instance_size in range(settings['start'], settings['stop'] + 1,
-                               settings['step-size']):
-        for _ in range(0, settings['nrounds']):
-            size = instance_size
-            runtimes, failures_l, res_l = [], [], []
+    runtimes, failures_l, res_l = [], [], []
 
-            try:
-                res = run_experiment(
-                    command,
-                    settings['timeout-ms'],
-                    instance_size,
-                    args,
-                    capture=capture)
-                runtime = res['runtime']
-                failures = res['failures']
+    for _ in range(0, settings['nrounds']):
+        try:
+            res = run_experiment(
+                command,
+                args,
+                capture=capture)
+            runtime = res['runtime']
+            failures = res['failures']
 
-            except OutOfMemory:
-                runtime = float("inf")
-                failures = 0  # I wish there were a better solution than this!
+        except OutOfMemory:
+            runtime = float("inf")
+            failures = 0  # I wish there were a better solution than this!
 
-            log.debug("{} {} {}".format(size, runtime, failures))
-            runtimes.append(float(runtime))
-            failures_l.append(int(failures))
+        runtimes.append(float(runtime))
+        failures_l.append(int(failures))
 
-            del res['runtime']
-            del res['failures']
+        del res['runtime']
+        del res['failures']
+        res_l.append(res)
 
-            res_l.append(res)
-
-            # Die early on timeout
-            if settings['die-on-timeout'] and runtimes[-1] == float("inf"):
-                break
-
-        runtime = collate_fn(runtimes)
-        failures = int(collate_fn(failures_l))
-        results.append({'size': instance_size,
-                        'runtime': runtime,
-                        'failures': failures,
-                        # Fixme: this is slightly controversial: use the
-                        # captured results from the first run.
-                        **res_l[0]})
-        if runtime == float("inf") and \
-           instance_size >= settings['run-at-least'] and \
-           settings['die-on-timeout']:
+        # Die early on timeout
+        if settings['die-on-timeout'] and runtimes[-1] == float("inf"):
             break
+
+    runtime = collate_fn(runtimes)
+    failures = int(collate_fn(failures_l))
+    results.append({'runtime': runtime,
+                    'failures': failures,
+                    # Fixme: this is slightly controversial: use the
+                    # captured results from the first run.
+                    **res_l[0]})
+    # if runtime == float("inf") and settings['die-on-timeout']:
+    #     raise Timeout("Timeout!")
     return results

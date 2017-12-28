@@ -35,7 +35,7 @@ def plot_data_as_pdf(data, filename, x_label, y_label, legend_loc=None):
         pp.savefig()
 
 
-def generate_graph(graph_cfg, experiment_data, translations):
+def generate_graph(graph_cfg, experiments, translations):
     """
     Generate a PDF graph with a given configuration and a single
     instance of experiment data.
@@ -50,20 +50,29 @@ def generate_graph(graph_cfg, experiment_data, translations):
     y_label = graph_cfg.get('y-label', "")
     legend_loc = graph_cfg.get('legend-loc', None)
 
+    # we need to make this two-way: filename, lael -> (x-values, y-values)
     # label -> (x-values, y-values)
     plots = defaultdict(lambda: ([], []))
 
-    for exp_cfg_s, exp_results in experiment_data.items():
+    # For each experiment, go trough each setup then each result and
+    # concatenate them into plots.
+    for experiment in experiments:
+        print(experiment)
+
+    # Finally, render the plots.
+
+    for exp_cfg_s, exp_results in experiments:
         exp_cfg = conductor.common.deserialise_options(exp_cfg_s, translations)
-        rendered_label = label_pattern.format(**exp_cfg)
+        print(exp_cfg_s)
+        rendered_label = label_pattern.render(**exp_cfg)
         log.info("Adding plot with label %s", rendered_label)
 
         xs, ys = [], []
 
         for r in exp_results:
-
+            data = {**exp_cfg, **r}
             try:
-                xv, yv = float(r[x_axis_index]), float(r[y_axis_index])
+                xv, yv = float(data[x_axis_index]), float(data[y_axis_index])
                 if xv == float("inf") or yv == float("inf"):
                     log.info("Skipping infinite measurement!")
                     continue
@@ -78,9 +87,10 @@ def generate_graph(graph_cfg, experiment_data, translations):
         old_xs, old_ys = plots[rendered_label]
         plots[rendered_label] = ([*old_xs, *xs], [*old_ys, *ys])
 
+    filename = graph_cfg['file'].render()
     plot_data_as_pdf(plots,
                      legend_loc=legend_loc,
-                     filename=graph_cfg['file'],
+                     filename=filename,
                      x_label=x_label,
                      y_label=y_label)
 
@@ -110,13 +120,16 @@ def generate_tables(output_cfg, experiments, translations):
 
 
     def sort_key_fn(res):
-        return res.get(sort_by)
+        try:
+            return float(res.get(sort_by))
+        except ValueError:
+            return res.get(sort_by)
 
     for experiment in experiments:
         for setup_s, results in experiment.items():
             setup = conductor.common.deserialise_options(setup_s, translations)
-            file_name = filename_template.format(**setup)
-            heading = heading_template.format(**setup)
+            file_name = filename_template.render(**setup)
+            heading = heading_template.render(**setup)
             headings[file_name] = heading
             tables[file_name] += list(zip(results, repeat(setup)))
 
@@ -125,16 +138,15 @@ def generate_tables(output_cfg, experiments, translations):
         table_rows = []
 
         # sort everything globally
-        results_and_setup.sort(key=lambda x: sort_key_fn(x[0]), reverse=False)
+
+        results_and_setup.sort(key=lambda x: sort_key_fn({**x[0], **x[1]}),
+                               reverse=False)
 
         # render row-by-row
         for row, setup in results_and_setup:
-            if row['runtime'] == float("inf") and timeout_symbol:
-                row['runtime'] = timeout_symbol
-
             # Render the row
             try:
-                table_rows.append(row_template.format(**{**setup, **row}))
+                table_rows.append(row_template.render(**{**setup, **row}))
             except (ValueError, KeyError) as e:
                 log.error("Error rendering template: %s", row_template)
                 log.error("With data %s", {**setup, **row})
@@ -148,8 +160,7 @@ def generate_tables(output_cfg, experiments, translations):
 
 def generate_output(output_cfg, experiments, translations):
     if output_cfg['type'] == 'graph':
-        generate_graph(output_cfg, list(experiments.values())[0], translations)
-        pass
+        generate_graph(output_cfg, experiments.values(), translations)
     elif output_cfg['type'] == 'text-file':
         generate_tables(output_cfg, experiments.values(), translations)
     else:

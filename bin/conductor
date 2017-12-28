@@ -3,7 +3,7 @@ import conductor.common
 import conductor.conf
 import conductor.generate
 
-from conductor.run_experiments import run_experiments
+from conductor.run_experiments import run_experiments, Timeout
 
 import yaml
 import daiquiri
