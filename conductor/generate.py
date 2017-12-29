@@ -118,13 +118,6 @@ def generate_tables(output_cfg, experiments, translations):
     tables = defaultdict(list)
     headings = {}
 
-
-    def sort_key_fn(res):
-        try:
-            return float(res.get(sort_by))
-        except ValueError:
-            return res.get(sort_by)
-
     for experiment in experiments:
         for setup_s, results in experiment.items():
             setup = conductor.common.deserialise_options(setup_s, translations)
@@ -139,8 +132,16 @@ def generate_tables(output_cfg, experiments, translations):
 
         # sort everything globally
 
-        results_and_setup.sort(key=lambda x: sort_key_fn({**x[0], **x[1]}),
-                               reverse=False)
+        for sorting in sort_by[::-1]:
+            def sort_key_fn(res):
+                try:
+                    return float(res.get(sorting))
+                except ValueError:
+                    return res.get(sorting)
+
+
+            results_and_setup.sort(key=lambda x: sort_key_fn({**x[0], **x[1]}),
+                                   reverse=False)
 
         # render row-by-row
         for row, setup in results_and_setup:
