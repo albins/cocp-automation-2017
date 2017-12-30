@@ -30,6 +30,20 @@ class Timeout(Exception):
     pass
 
 
+def handle_captures(line, captures, capture_conf):
+    for c_name, c in capture_conf.items():
+        convert_fn = c['type']
+        capture_re = re.compile(c['regex'])
+        match = capture_re.match(line)
+
+        if match and not (c_name in captures and c['use'] == 'first'):
+            log.debug("Re %s matched: %s", c_name, match)
+            captures[c_name] = convert_fn(match.group(c_name))
+        else:
+            log.debug("Re %s did not match", c_name)
+
+
+
 def parse_gecode_output(in_file, capture=None):
     timeout_re = re.compile(RUNTIME_RE)
     reason_re = re.compile(REASON_RE)
@@ -46,14 +60,7 @@ def parse_gecode_output(in_file, capture=None):
         tout_match = timeout_re.match(line)
 
         if capture:
-            for c_name, c in capture.items():
-                convert_fn = c['type']
-                capture_re = re.compile(c['regex'])
-                match = capture_re.match(line)
-                if match and not (c_name in captures and c['use'] == 'first'):
-                    log.debug("Re %s matched: %s", c_name, match)
-                    captures[c_name] = convert_fn(match.group(c_name))
-
+            handle_captures(line, captures, capture_conf=capture)
 
         if failures_re.match(line):
             failures = int(failures_re.match(line).group('failures'))

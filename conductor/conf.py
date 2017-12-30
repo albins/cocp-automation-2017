@@ -156,6 +156,8 @@ def load_conf(conf_dict):
                                       ", ".join(override['settings'].keys()))
                             command_settings = {**command_settings,
                                                 **override['settings']}
+                            combined_options = {**combined_options,
+                                                **override['settings']}
 
                 command = command_template.format(**combined_options)
                 args = [arg.format(**combined_options) for arg in args_templates]
